@@ -1,0 +1,54 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <arpa/inet.h>
+#include <sys/socket.h>
+#include <sys/types.h>
+
+int main(int argc, char *argv[]) {
+    // Check for correct command-line arguments
+    if (argc != 4) {
+        printf("Usage: %s <Target IP> <Start Port> <End Port>\n", argv[0]);
+        printf("Example: %s 127.0.0.1 20 80\n", argv[0]);
+        return 1;
+    }
+
+    char *target_ip = argv[1];
+    int start_port = atoi(argv[2]);
+    int end_port = atoi(argv[3]);
+
+    printf("Starting scan on target: %s\n", target_ip);
+    printf("Scanning ports from %d to %d...\n\n", start_port, end_port);
+
+    // Loop through the specified port range
+    for (int port = start_port; port <= end_port; port++) {
+        int sock;
+        struct sockaddr_in target;
+
+        // 1. Create a TCP socket
+        sock = socket(AF_INET, SOCK_STREAM, 0);
+        if (sock < 0) {
+            perror("Socket creation failed");
+            exit(1);
+        }
+
+        // 2. Set up the target address structure
+        memset(&target, 0, sizeof(target));
+        target.sin_family = AF_INET;
+        target.sin_addr.s_addr = inet_addr(target_ip);
+        target.sin_port = htons(port);
+
+        // 3. Attempt to connect to the target port
+        // connect() returns 0 if successful (port is open)
+        if (connect(sock, (struct sockaddr *)&target, sizeof(target)) == 0) {
+            printf("[+] Port %d is OPEN\n", port);
+        }
+
+        // 4. Close the socket to free up the descriptor
+        close(sock);
+    }
+
+    printf("\nScan complete.\n");
+    return 0;
+}
